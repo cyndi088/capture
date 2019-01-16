@@ -27,8 +27,7 @@ APP_SECRET = 'idsldsflfsdldfso2s2'
 
 
 # 修改二
-# HTTP_PREFIX = 'http://192.168.10.101:8686/om/aimgr/'
-HTTP_PREFIX = 'http://www.zhonshian.com/zsaai/aimgr/'
+HTTP_PREFIX = 'http://192.168.10.101:8686/om/aimgr/'
 FACE_PIC_HTTP_PREFIX = 'http://114.55.75.34:85/'
 
 

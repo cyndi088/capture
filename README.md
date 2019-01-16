@@ -1,1 +1,2 @@
 # capture
+## Delete settings
