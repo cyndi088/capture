@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+
 from PIL import Image
 
 
@@ -35,6 +37,11 @@ class CompareImage(object):
         return sub_image_list
 
     def compare_image(self, file_image1, file_image2, size=(256, 256), part_size=(64, 64)):
+
+        if os.path.getsize(file_image2) == 0:
+            print('获得一个空文件!!!')
+            return 1.0
+
         image1 = Image.open(file_image1)
         image2 = Image.open(file_image2)
 
@@ -55,7 +62,6 @@ class CompareImage(object):
         # print(str(pre * 100) + '%')
         # print('Compare the image result is: ' + str(pre))
         return pre
-
 
 # compare_image = CompareImage()
 # compare_image.compare_image("./img/15.jpg", "./img/16.jpg")
