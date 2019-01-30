@@ -2,5 +2,7 @@
 .idea
 __pycache__
 *.log
-cache
-data
+cache/*.jpg
+data/*.jpg
+*backup*
+

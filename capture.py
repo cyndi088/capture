@@ -14,6 +14,7 @@ import requests
 from PIL import Image
 
 import cv2
+from delete import MyDel
 from similarity import CompareImage
 
 HTTP_ENABLE = True
@@ -46,9 +47,9 @@ HEART_BEAT_TIME = 3600  # 默认一小时重新获取token
 REDIS_CLIENT_IP = 'redis_host'
 REDIS_CLIENT_PORT = 6379
 REDIS_CLIENT_DB = 15
-PEOPLES_INDEX_SET_NAME = 'p_list'
-PEOPLES_INDEX_CONTRAST_NAME = 'c_list'
-PEOPLE_INFO_PREFIX = 'p:'
+PEOPLES_INDEX_SET_NAME = 'p_list' + DEV_NO
+PEOPLES_INDEX_CONTRAST_NAME = 'c_list' + DEV_NO
+PEOPLE_INFO_PREFIX = 'p_{}:'.format(DEV_NO)
 
 # 同时处理的最大线程数
 executor = ThreadPoolExecutor(10)
@@ -106,7 +107,6 @@ def upload_info_to_server(url, file_url, dev_no, token, people_str, img_path, uu
                 code = json_res['code']
                 desc = json_res['desc']
                 print('upload_info: got upload_file_name: code %s, desc: %s, name %s' % (code, desc, upload_file_name))
-
                 copy_file(img_path, upload_file_name, RESIZE_WIDTH, RESIZE_HEIGHT, RESIZE_QUALITY)
 
                 payload = {"file": upload_file_name}
@@ -156,6 +156,26 @@ r = setup_redis_client(REDIS_CLIENT_IP, REDIS_CLIENT_PORT, REDIS_CLIENT_DB)
 token = get_token_from_server(DEVICE_INFO_PREFIX, DEV_NO, APP_ID, APP_SECRET)
 
 
+def initial():
+    # 删除当前目录下的data
+    for folder in ['data', 'cache']:
+        md = MyDel(folder)
+        md.doWork()
+
+    # 删除redis
+    keys = r.keys('*')
+    for key in keys:
+        key = key.decode('utf-8')
+        if PEOPLES_INDEX_SET_NAME == key:
+            r.delete(key)
+        elif key.startswith(PEOPLE_INFO_PREFIX):
+            r.delete(key)
+
+    r.delete(PEOPLES_INDEX_CONTRAST_NAME)
+
+    print('==================================> Initial ok <==================================')
+
+
 def get_img(rtsp_path, img_name):
     vc = cv2.VideoCapture(rtsp_path)
 
@@ -184,11 +204,14 @@ def get_img(rtsp_path, img_name):
 # 定时截图
 def capture():
     flag = True  # 是否为第一次启动
+
+    if flag:
+        initial()
+
     while True:
         cp_time = time.time()
         image_name = str(int(cp_time))
         print('%s.jpg开始截图' % image_name)
-
         is_ok = get_img(rtsp_src, image_name)
 
         if not is_ok:
@@ -242,11 +265,13 @@ def func():
     c_img_path = r.hget(c_info_str, 'file_path').decode('utf-8')
     name_img_path = r.hget(name_info_str, 'file_path').decode('utf-8')
     score = compare_image.compare_image(c_img_path, name_img_path)
+
     print('****************************')
     print(c_str)  # 旧值
     print(name_str)  # 新值
     print(score)
     print('****************************')
+
     if score > 0.65:  # 相似度
         os.remove(name_img_path)
         print('delete ===>[%s]' % name_info_str)
